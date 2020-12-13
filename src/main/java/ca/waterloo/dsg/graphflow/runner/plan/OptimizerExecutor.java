@@ -81,7 +81,7 @@ public class OptimizerExecutor extends AbstractRunner {
                     Integer.parseInt(cmdLine.getOptionValue(ArgsFactory.NUM_THREADS));
             var workers = new Workers(queryPlan, numThreads);
             logger.info("Plan initialization before exec run time: " + elapsedTime + " (ms)");
-            workers.init(graph, store);
+            workers.init(graph, store, queryGraph.getEdges().get(0).getLabel());
             elapsedTime = IOUtils.getElapsedTimeInMillis(beginTime);
             workers.execute();
             if (cmdLine.hasOption(ArgsFactory.OUTPUT_FILE)) {

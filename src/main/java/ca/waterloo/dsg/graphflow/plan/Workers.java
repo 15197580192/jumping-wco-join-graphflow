@@ -3,6 +3,7 @@ package ca.waterloo.dsg.graphflow.plan;
 import ca.waterloo.dsg.graphflow.plan.operator.Operator.LimitExceededException;
 import ca.waterloo.dsg.graphflow.plan.operator.hashjoin.Build;
 import ca.waterloo.dsg.graphflow.plan.operator.hashjoin.HashTable;
+import ca.waterloo.dsg.graphflow.plan.operator.jumpinglikejoin.JumpingLikeJoin;
 import ca.waterloo.dsg.graphflow.plan.operator.scan.ScanBlocking;
 import ca.waterloo.dsg.graphflow.plan.operator.scan.ScanBlocking.VertexIdxLimits;
 import ca.waterloo.dsg.graphflow.storage.Graph;
@@ -29,17 +30,20 @@ public class Workers {
     private Thread[][] workers;
     private int numThreads = 1;
 
-    @Getter private double elapsedTime = 0;
+    private JumpingLikeJoin jumpingLikeJoin;
+
+    @Getter
+    private double elapsedTime = 0;
     private long intersectionCost = 0;
     private long numIntermediateTuples = 0;
     private long numOutTuples = 0;
     transient private List<Triple<String /* name */,
-        Long /* i-cost */, Long /* prefixes size */>> operatorMetrics;
+            Long /* i-cost */, Long /* prefixes size */>> operatorMetrics;
 
     /**
      * Constructs a {@link Workers} object.
      *
-     * @param queryPlan is the query plan to execute.
+     * @param queryPlan  is the query plan to execute.
      * @param numThreads is the number of threads to use executing the query.
      */
     public Workers(Plan queryPlan, int numThreads) {
@@ -58,7 +62,10 @@ public class Workers {
                 for (var subplanId = 0; subplanId < numSubplans; subplanId++) {
                     var operator = subplans.get(subplanId);
                     Runnable runnable = () -> {
-                        try { operator.execute(); } catch (LimitExceededException e) {}
+                        try {
+                            operator.execute();
+                        } catch (LimitExceededException e) {
+                        }
                     };
                     workers[subplanId][i] = new Thread(runnable);
                 }
@@ -79,10 +86,11 @@ public class Workers {
         }
     }
 
-    public void init(Graph graph, KeyStore store) {
+    public void init(Graph graph, KeyStore store, short label) {
         for (var queryPlan : queryPlans) {
             queryPlan.init(graph, store);
         }
+        jumpingLikeJoin = new JumpingLikeJoin(graph, label);
         var numBuildOperators = queryPlans[0].getSubplans().size() - 1;
         for (var buildIdx = 0; buildIdx < numBuildOperators; buildIdx++) {
             var ID = ((Build) queryPlans[0].getSubplans().get(buildIdx)).getID();
@@ -98,8 +106,15 @@ public class Workers {
 
     public void execute() throws InterruptedException {
         if (queryPlans.length == 1) {
-            queryPlans[0].execute();
-            elapsedTime = queryPlans[0].getElapsedTime();
+            if (jumpingLikeJoin == null) {
+                queryPlans[0].execute();
+                elapsedTime = queryPlans[0].getElapsedTime();
+            } else {
+                var startTime = System.nanoTime();
+                var ans = jumpingLikeJoin.getEdge3ByFwdAdjList();
+                elapsedTime = IOUtils.getElapsedTimeInMillis(startTime);
+                numOutTuples = ans.size();
+            }
         } else {
             var beginTime = System.nanoTime();
             for (var subplanWorkers : workers) {
@@ -118,6 +133,15 @@ public class Workers {
      * @return The stats as a one line comma separated CSV  one line row for logging.
      */
     public String getOutputLog() {
+        if (jumpingLikeJoin != null) {
+            var czyStr = new StringJoiner(",");
+            czyStr.add(String.format("%.4f", elapsedTime));
+            czyStr.add(String.format("%d", numOutTuples));
+            czyStr.add(String.format("%d", -1));
+            czyStr.add("Jumping Like Join");
+            return czyStr.toString() + '\n';
+        }
+        // ------------------------------------------------------
         if (queryPlans.length == 1) {
             return queryPlans[0].getOutputLog();
         }
