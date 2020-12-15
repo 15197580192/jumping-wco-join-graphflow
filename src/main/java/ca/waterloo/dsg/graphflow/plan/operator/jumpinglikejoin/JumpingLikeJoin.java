@@ -30,6 +30,34 @@ public class JumpingLikeJoin {
     }
 
     /**
+     * Jumping like join 表和一边的表
+     *
+     * @param t 和一边连接的表
+     * @return 连接结果
+     */
+    public List<int[]> intersect(List<int[]> t) {
+        List<int[]> res = new ArrayList<>();
+        // r[0] -> r[1] -> r1NeighborId -> destinationID
+        for (int[] r : t) {
+            int r1StartIdx = fwdAdjList[r[1]].getLabelOrTypeOffsets()[label];
+            int r1EndIdx = fwdAdjList[r[1]].getLabelOrTypeOffsets()[label + 1];
+            for (int i = r1StartIdx; i < r1EndIdx; i++) {
+                int r1NeighborId = fwdAdjList[r[1]].getNeighbourId(i);
+                int edge1StartIdx = fwdAdjList[r1NeighborId].getLabelOrTypeOffsets()[label];
+                int edg1EndIdx = fwdAdjList[r1NeighborId].getLabelOrTypeOffsets()[label + 1];
+                for (int j = edge1StartIdx; j < edg1EndIdx; j++) {
+                    int destinationID = fwdAdjList[r1NeighborId].getNeighbourId(j);
+                    int[] row = new int[2];
+                    row[0] = r[0];
+                    row[1] = destinationID;
+                    res.add(row);
+                }
+            }
+        }
+        return res;
+    }
+
+    /**
      * Jumping like join two tables.
      *
      * @param t1 主表

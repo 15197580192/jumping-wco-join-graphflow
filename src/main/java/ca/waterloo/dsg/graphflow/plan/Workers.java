@@ -90,7 +90,7 @@ public class Workers {
         for (var queryPlan : queryPlans) {
             queryPlan.init(graph, store);
         }
-        jumpingLikeJoin = new JumpingLikeJoin(graph, label);
+//        jumpingLikeJoin = new JumpingLikeJoin(graph, label);
         var numBuildOperators = queryPlans[0].getSubplans().size() - 1;
         for (var buildIdx = 0; buildIdx < numBuildOperators; buildIdx++) {
             var ID = ((Build) queryPlans[0].getSubplans().get(buildIdx)).getID();
@@ -110,6 +110,9 @@ public class Workers {
                 queryPlans[0].execute();
                 elapsedTime = queryPlans[0].getElapsedTime();
             } else {
+                // 使用原方法得到边长为2的边
+                queryPlans[0].execute();
+                List<int[]> edge2 = queryPlans[0].getSink().getPrev().getIntermedia();
                 var startTime = System.nanoTime();
                 var ans = jumpingLikeJoin.getEdge3ByFwdAdjList();
                 elapsedTime = IOUtils.getElapsedTimeInMillis(startTime);

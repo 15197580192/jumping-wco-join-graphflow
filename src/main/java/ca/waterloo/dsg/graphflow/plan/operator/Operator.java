@@ -43,6 +43,8 @@ public abstract class Operator implements Serializable {
     @Getter protected long numOutTuples = 0;
     @Getter protected long icost = 0;
 
+    @Getter protected List<int[]>  intermedia;
+
     /**
      * Constructs an {@link Operator} object.
      *
