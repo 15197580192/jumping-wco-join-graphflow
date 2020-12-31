@@ -2,6 +2,8 @@ package ca.waterloo.dsg.graphflow.plan.operator.jumpinglikejoin;
 
 import ca.waterloo.dsg.graphflow.storage.Graph;
 import ca.waterloo.dsg.graphflow.storage.SortedAdjList;
+import lombok.Getter;
+import lombok.var;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,9 +11,12 @@ import java.util.List;
 import java.util.Map;
 
 
-public class JumpingLikeJoin {
+public class JumpingLikeJoin implements Runnable {
     private SortedAdjList[] fwdAdjList;
     private short label;
+
+    @Getter
+    private List<int[]> edge3;
 
     private Map<Integer, List<Integer>> subTable; // record the vertex joined and the vertices followed the joined vertex
 
@@ -19,9 +24,11 @@ public class JumpingLikeJoin {
         this.label = label;
         this.fwdAdjList = graph.getFwdAdjLists();
         this.subTable = new HashMap<>();
+        this.edge3 = null;
     }
 
     public void buildSubTable(List<int[]> temps) {
+        subTable.clear();
         for (int[] temp : temps) {
             subTable.putIfAbsent(temp[0], new ArrayList<>());
             List<Integer> l = subTable.get(temp[0]);
@@ -65,7 +72,6 @@ public class JumpingLikeJoin {
      * @return 连接后的结果
      */
     public List<int[]> intersect(List<int[]> t1, List<int[]> t2) {
-        buildSubTable(t2);
         List<int[]> res = new ArrayList<>();
 
         for (int[] r : t1) {
@@ -113,4 +119,22 @@ public class JumpingLikeJoin {
         }
         return res;
     }
+
+    @Override
+    public void run() {
+        edge3 = getEdge3ByFwdAdjList();
+    }
+
+    public List<int[]> testEdge3toEdge6() {
+        List<int[]> res = new ArrayList<>();
+        var edge3 = getEdge3ByFwdAdjList();
+        buildSubTable(edge3);
+        for (var e : edge3) {
+            var l = subTable.getOrDefault(e[1], new ArrayList<>());
+            for (var i : l)
+                res.add(new int[]{e[0], i});
+        }
+        return res;
+    }
+
 }
