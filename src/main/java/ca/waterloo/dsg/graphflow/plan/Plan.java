@@ -36,28 +36,46 @@ public class Plan implements Serializable {
 
     private transient static final Logger logger = LogManager.getLogger(Plan.class);
 
-    @Getter private Sink sink;
-    @Setter public SinkType sinkType = SinkType.COUNTER;
-    @Getter public ScanSampling scanSampling;
-    @Getter private Operator lastOperator;
-    @Setter public int outTuplesLimit;
+    @Getter
+    private Sink sink;
+    @Setter
+    public SinkType sinkType = SinkType.COUNTER;
+    @Getter
+    public ScanSampling scanSampling;
+    @Getter
+    private Operator lastOperator;
+    @Setter
+    public int outTuplesLimit;
 
-    @Getter private double elapsedTime = 0;
-    @Getter private long icost = 0;
-    @Getter private long numIntermediateTuples = 0;
-    @Getter private long numOutTuples = 0;
-    @Getter transient private List<Triple<String /* name */,
-        Long /* i-cost */, Long /* number output tuples */>> operatorMetrics = new ArrayList<>();
+    @Getter
+    private double elapsedTime = 0;
+    @Getter
+    private long icost = 0;
+    @Getter
+    private long numIntermediateTuples = 0;
+    @Getter
+    private long numOutTuples = 0;
+    @Getter
+    transient private List<Triple<String /* name */,
+            Long /* i-cost */, Long /* number output tuples */>> operatorMetrics = new ArrayList<>();
 
     private boolean executed = false;
-    @Getter private boolean adaptiveEnabled = false;
+    @Getter
+    private boolean adaptiveEnabled = false;
 
-    @Getter List<Operator> subplans = new ArrayList<>();
+    @Getter
+    List<Operator> subplans = new ArrayList<>();
     private List<Probe> probes;
 
-    @Getter @Setter double estimatedICost;
-    @Getter @Setter double estimatedNumOutTuples;
-    @Getter @Setter Map<String/*qVertex*/, Double/*estimatedNumOutTuples*/> qVertexToNumOutTuples;
+    @Getter
+    @Setter
+    double estimatedICost;
+    @Getter
+    @Setter
+    double estimatedNumOutTuples;
+    @Getter
+    @Setter
+    Map<String/*qVertex*/, Double/*estimatedNumOutTuples*/> qVertexToNumOutTuples;
 
     /**
      * Constructs a {@link Plan} object.
@@ -97,7 +115,7 @@ public class Plan implements Serializable {
     /**
      * Constructs a {@link Plan} object.
      *
-     * @param lastOperator is the scan operator to execute.
+     * @param lastOperator          is the scan operator to execute.
      * @param estimatedNumOutTuples is the number of output tuples from the scan.
      */
     public Plan(Scan lastOperator, double estimatedNumOutTuples) {
@@ -122,11 +140,17 @@ public class Plan implements Serializable {
         if (SinkType.LIMIT != sinkType) {
             var startTime = System.nanoTime();
             try {
-                logger.debug("subplans' size: "+subplans.size());
+                logger.debug("subplans' size: " + subplans.size());
+                int sp = 0;
                 for (var subplan : subplans) {
+                    var subplanStartTime = System.nanoTime();
                     subplan.execute();
+                    var subplanEndTime = IOUtils.getElapsedTimeInMillis(subplanStartTime);
+                    logger.debug("Subplan " + sp + " used " + subplanEndTime + " ms.");
+                    sp++;
                 }
-            } catch (LimitExceededException e) {} // never thrown.
+            } catch (LimitExceededException e) {
+            } // never thrown.
             elapsedTime = IOUtils.getElapsedTimeInMillis(startTime);
         } else {
             ((SinkLimit) sink).setStartTime(System.nanoTime());
@@ -134,7 +158,8 @@ public class Plan implements Serializable {
                 for (var subplan : subplans) {
                     subplan.execute();
                 }
-            } catch (LimitExceededException e) {} // never thrown.
+            } catch (LimitExceededException e) {
+            } // never thrown.
             elapsedTime = ((SinkLimit) sink).getElapsedTime();
         }
         executed = true;
@@ -150,7 +175,7 @@ public class Plan implements Serializable {
     public void init(Graph graph, KeyStore store) {
         var lastOperator = subplans.get(subplans.size() - 1);
         var queryGraph = lastOperator.getOutSubgraph();
-        switch(sinkType) {
+        switch (sinkType) {
             case LIMIT:
                 sink = new SinkLimit(queryGraph, outTuplesLimit);
                 break;

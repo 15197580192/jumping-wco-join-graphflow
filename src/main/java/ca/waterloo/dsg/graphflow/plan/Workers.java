@@ -114,16 +114,28 @@ public class Workers {
 //                // 并行得到边长为3的边
 //                var t = new Thread(jumpingLikeJoin);
 //                t.start();
-////
-//                // 使用原方法得到边长为2的边
-//                queryPlans[0].execute();
-//                List<int[]> edge2 = queryPlans[0].getSink().getPrev().getIntermedia();
+
+                // 使用原方法得到边长为2的边
+                var getEdge2StartTime = System.nanoTime();
+                queryPlans[0].execute();
+                var edge2 = queryPlans[0].getSink().getPrev().getIntermedia();
+                var getEdge2EndTime = IOUtils.getElapsedTimeInMillis(getEdge2StartTime);
+                logger.debug("get edge2 used " + getEdge2EndTime + " ms.");
+
+                var buildSubTableStartTime = System.nanoTime();
+                jumpingLikeJoin.buildSubTable(edge2);
+                var buildSubTableEndTime = IOUtils.getElapsedTimeInMillis(buildSubTableStartTime);
+                logger.debug("Build SubTable of edge2 used " + buildSubTableEndTime + " ms.");
+
+                // jumping like join 得到边4
+                var getEdge4StartTime = System.nanoTime();
+                var ans = jumpingLikeJoin.intersect(edge2);
+                var getEdge4EndTime = IOUtils.getElapsedTimeInMillis(getEdge4StartTime);
+                logger.debug("get edge4 used " + getEdge4EndTime + " ms.");
 //                jumpingLikeJoin.buildSubTable(edge2);
-//
 //                t.join();
 //                List<int[]> edge3 = jumpingLikeJoin.getEdge3();
 //                var ans = jumpingLikeJoin.intersect(edge3, edge2);
-                var ans = jumpingLikeJoin.testEdge3toEdge6();
                 elapsedTime = IOUtils.getElapsedTimeInMillis(startTime);
                 numOutTuples = ans.size();
             }
