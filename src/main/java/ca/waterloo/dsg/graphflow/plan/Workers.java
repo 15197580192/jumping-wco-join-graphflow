@@ -90,7 +90,7 @@ public class Workers {
         for (var queryPlan : queryPlans) {
             queryPlan.init(graph, store);
         }
-        jumpingLikeJoin = new JumpingLikeJoin(graph, label);
+//        jumpingLikeJoin = new JumpingLikeJoin(graph, label);
         var numBuildOperators = queryPlans[0].getSubplans().size() - 1;
         for (var buildIdx = 0; buildIdx < numBuildOperators; buildIdx++) {
             var ID = ((Build) queryPlans[0].getSubplans().get(buildIdx)).getID();
@@ -111,9 +111,23 @@ public class Workers {
                 elapsedTime = queryPlans[0].getElapsedTime();
             } else {
                 var startTime = System.nanoTime();
-                var ans = jumpingLikeJoin.getEdge3ByFwdAdjList();
-                elapsedTime = IOUtils.getElapsedTimeInMillis(startTime);
-                numOutTuples = ans.size();
+//                queryPlans[0].execute();
+//                var edge2 = queryPlans[0].getLastOperator().getIntermedia();
+//
+//                logger.debug("edge2's size is " + edge2.size());
+//                jumpingLikeJoin.buildSubTable(edge2);
+//                var ans = jumpingLikeJoin.intersect(edge2, edge2);
+//                elapsedTime = IOUtils.getElapsedTimeInMillis(startTime);
+//                numOutTuples = ans.size();
+                var edge3ByTable = jumpingLikeJoin.getEdge3ByEdgeTable();
+                var edge3ByTableTime = IOUtils.getElapsedTimeInMillis(startTime);
+                logger.debug("edge3ByTable time is "+edge3ByTableTime);
+                var startTime2 = System.nanoTime();
+                var edge3ByFWD = jumpingLikeJoin.getEdge3ByFwdAdjList();
+                var edge3ByFWDTime = IOUtils.getElapsedTimeInMillis(startTime2);
+                logger.debug("edge3ByFWD time is "+edge3ByFWDTime);
+                elapsedTime = edge3ByFWDTime;
+                numOutTuples = edge3ByFWD.size();
             }
         } else {
             var beginTime = System.nanoTime();
