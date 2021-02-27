@@ -90,7 +90,7 @@ public class Workers {
         for (var queryPlan : queryPlans) {
             queryPlan.init(graph, store);
         }
-        jumpingLikeJoin = new JumpingLikeJoin(graph, label);
+//        jumpingLikeJoin = new JumpingLikeJoin(graph, label);
         var numBuildOperators = queryPlans[0].getSubplans().size() - 1;
         for (var buildIdx = 0; buildIdx < numBuildOperators; buildIdx++) {
             var ID = ((Build) queryPlans[0].getSubplans().get(buildIdx)).getID();
@@ -111,33 +111,23 @@ public class Workers {
                 elapsedTime = queryPlans[0].getElapsedTime();
             } else {
                 var startTime = System.nanoTime();
-//                // 并行得到边长为3的边
-//                var t = new Thread(jumpingLikeJoin);
-//                t.start();
-
-                // 使用原方法得到边长为2的边
-                var getEdge2StartTime = System.nanoTime();
-                queryPlans[0].execute();
-                var edge2 = queryPlans[0].getSink().getPrev().getIntermedia();
-                var getEdge2EndTime = IOUtils.getElapsedTimeInMillis(getEdge2StartTime);
-                logger.debug("get edge2 used " + getEdge2EndTime + " ms.");
-
-                var buildSubTableStartTime = System.nanoTime();
-                jumpingLikeJoin.buildSubTable(edge2);
-                var buildSubTableEndTime = IOUtils.getElapsedTimeInMillis(buildSubTableStartTime);
-                logger.debug("Build SubTable of edge2 used " + buildSubTableEndTime + " ms.");
-
-                // jumping like join 得到边4
-                var getEdge4StartTime = System.nanoTime();
-                var ans = jumpingLikeJoin.intersect(edge2);
-                var getEdge4EndTime = IOUtils.getElapsedTimeInMillis(getEdge4StartTime);
-                logger.debug("get edge4 used " + getEdge4EndTime + " ms.");
+//                queryPlans[0].execute();
+//                var edge2 = queryPlans[0].getLastOperator().getIntermedia();
+//
+//                logger.debug("edge2's size is " + edge2.size());
 //                jumpingLikeJoin.buildSubTable(edge2);
-//                t.join();
-//                List<int[]> edge3 = jumpingLikeJoin.getEdge3();
-//                var ans = jumpingLikeJoin.intersect(edge3, edge2);
-                elapsedTime = IOUtils.getElapsedTimeInMillis(startTime);
-                numOutTuples = ans.size();
+//                var ans = jumpingLikeJoin.intersect(edge2, edge2);
+//                elapsedTime = IOUtils.getElapsedTimeInMillis(startTime);
+//                numOutTuples = ans.size();
+                var edge3ByTable = jumpingLikeJoin.getEdge3ByEdgeTable();
+                var edge3ByTableTime = IOUtils.getElapsedTimeInMillis(startTime);
+                logger.debug("edge3ByTable time is "+edge3ByTableTime);
+                var startTime2 = System.nanoTime();
+                var edge3ByFWD = jumpingLikeJoin.getEdge3ByFwdAdjList();
+                var edge3ByFWDTime = IOUtils.getElapsedTimeInMillis(startTime2);
+                logger.debug("edge3ByFWD time is "+edge3ByFWDTime);
+                elapsedTime = edge3ByFWDTime;
+                numOutTuples = edge3ByFWD.size();
             }
         } else {
             var beginTime = System.nanoTime();

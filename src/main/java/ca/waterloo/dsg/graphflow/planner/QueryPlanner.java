@@ -374,4 +374,26 @@ public class QueryPlanner {
         Arrays.sort(queryVertices);
         return Arrays.toString(queryVertices);
     }
+
+    public Plan hardCode() {
+        var outSubgraph = new QueryGraph();
+        var queryEdge = queryGraph.getEdge("x", "p1");
+        outSubgraph.addEdge(queryEdge);
+        var scan = new Scan(outSubgraph);
+        var numEdges = getNumEdges(queryEdge);
+        var plan = new Plan(scan, numEdges);
+
+        plan = getPlanWithNextExtend(plan, "p2").b;
+        plan = getPlanWithNextExtend(plan, "p3").b;
+        plan = getPlanWithNextExtend(plan, "y").b;
+//        plan = getPlanWithNextExtend(plan, "p4").b;
+//
+//        queryGraph = new QueryGraph();
+//        queryGraph.addEdge(queryGraph.getEdge("p4", "p5"));
+//        plan.append(new Scan(queryGraph));
+//
+//        plan = getPlanWithNextExtend(plan, "p6").b;
+//        plan = getPlanWithNextExtend(plan, "y").b;
+        return plan;
+    }
 }
