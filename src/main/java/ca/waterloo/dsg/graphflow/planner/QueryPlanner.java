@@ -7,6 +7,7 @@ import ca.waterloo.dsg.graphflow.plan.operator.Operator;
 import ca.waterloo.dsg.graphflow.plan.operator.extend.EI;
 import ca.waterloo.dsg.graphflow.plan.operator.extend.EI.CachingType;
 import ca.waterloo.dsg.graphflow.plan.operator.hashjoin.HashJoin;
+import ca.waterloo.dsg.graphflow.plan.operator.jumpinglikejoin.JumpingLikeJoin;
 import ca.waterloo.dsg.graphflow.plan.operator.scan.Scan;
 import ca.waterloo.dsg.graphflow.plan.operator.sink.Sink.SinkType;
 import ca.waterloo.dsg.graphflow.planner.catalog.Catalog;
@@ -379,21 +380,25 @@ public class QueryPlanner {
         var outSubgraph = new QueryGraph();
         var queryEdge = queryGraph.getEdge("x", "p1");
         outSubgraph.addEdge(queryEdge);
-        var scan = new Scan(outSubgraph);
-        var numEdges = getNumEdges(queryEdge);
-        var plan = new Plan(scan, numEdges);
+        queryEdge = queryGraph.getEdge("p1", "p2");
+        outSubgraph.addEdge(queryEdge);
+        queryEdge = queryGraph.getEdge("p2", "p3");
+        outSubgraph.addEdge(queryEdge);
+        var jumpingLikeJoin2Probe = new JumpingLikeJoin(outSubgraph, graph);
+        List<Operator> preProbe = new ArrayList<>();
+        preProbe.add(jumpingLikeJoin2Probe);
 
-        plan = getPlanWithNextExtend(plan, "p2").b;
-        plan = getPlanWithNextExtend(plan, "p3").b;
-        plan = getPlanWithNextExtend(plan, "y").b;
-//        plan = getPlanWithNextExtend(plan, "p4").b;
-//
-//        queryGraph = new QueryGraph();
-//        queryGraph.addEdge(queryGraph.getEdge("p4", "p5"));
-//        plan.append(new Scan(queryGraph));
-//
-//        plan = getPlanWithNextExtend(plan, "p6").b;
-//        plan = getPlanWithNextExtend(plan, "y").b;
-        return plan;
+        outSubgraph = new QueryGraph();
+        queryEdge = queryGraph.getEdge("p3", "p4");
+        outSubgraph.addEdge(queryEdge);
+        queryEdge = queryGraph.getEdge("p4", "p5");
+        outSubgraph.addEdge(queryEdge);
+        queryEdge = queryGraph.getEdge("p5", "y");
+        outSubgraph.addEdge(queryEdge);
+        var jumpingLikeJoin2Build = new JumpingLikeJoin(outSubgraph, graph);
+        List<Operator> preBuild = new ArrayList<>();
+        preBuild.add(jumpingLikeJoin2Build);
+
+        return new Plan(HashJoin.make(queryGraph, preBuild, preProbe, 0));
     }
 }

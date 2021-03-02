@@ -18,7 +18,7 @@ public class HashJoin {
         return new Plan(make(outSubgraph, buildPlan.shallowCopy().getSubplans(),
             probePlan.shallowCopy().getSubplans(), nextHashJoinID));
     }
-
+    // 此处得到Build和Probe
     public static List<Operator> make(QueryGraph outSubgraph, List<Operator> buildSubplans,
         List<Operator> probeSubplans, int nextHashJoinID) {
         var preBuild = buildSubplans.get(buildSubplans.size() - 1);

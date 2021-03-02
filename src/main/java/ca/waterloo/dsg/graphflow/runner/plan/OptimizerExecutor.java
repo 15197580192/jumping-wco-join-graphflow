@@ -69,7 +69,7 @@ public class OptimizerExecutor extends AbstractRunner {
                 new QueryPlanner(queryGraph, catalog, graph) :
                 new QueryPlannerBig(queryGraph, catalog, graph);
         var beginTime = System.nanoTime();
-        var queryPlan = planner.plan();
+        var queryPlan = planner.hardCode(); // 此处改查询计划
         var elapsedTime = IOUtils.getElapsedTimeInMillis(beginTime);
         if (!cmdLine.hasOption(ArgsFactory.OUTPUT_FILE)) {
             logger.info("Optimizer run time: " + elapsedTime + " (ms)");

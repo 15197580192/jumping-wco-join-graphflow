@@ -1,6 +1,7 @@
 package ca.waterloo.dsg.graphflow.plan.operator.jumpinglikejoin;
 
 import ca.waterloo.dsg.graphflow.plan.operator.Operator;
+import ca.waterloo.dsg.graphflow.query.QueryGraph;
 import ca.waterloo.dsg.graphflow.storage.Graph;
 import ca.waterloo.dsg.graphflow.storage.KeyStore;
 import ca.waterloo.dsg.graphflow.storage.SortedAdjList;
@@ -11,7 +12,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 
 
 public class JumpingLikeJoin extends Operator implements Runnable {
@@ -31,6 +31,31 @@ public class JumpingLikeJoin extends Operator implements Runnable {
         this.edge3 = null;
 
         initEdgeTable();
+    }
+
+    public JumpingLikeJoin(QueryGraph outSubgraph, Graph graph) {
+        super(outSubgraph, null /* no inSubgraph */);
+        lastRepeatedVertexIdx = 0;
+        var queryEdge = outSubgraph.getEdges().get(0);
+        this.label = queryEdge.getLabel();
+        var fromQueryVertex = queryEdge.getFromVertex();
+        var toQueryVertex = queryEdge.getToVertex();
+        outQVertexToIdxMap = new HashMap<>();
+        outQVertexToIdxMap.put(fromQueryVertex, 0);
+        outQVertexToIdxMap.put(toQueryVertex, 1);
+        fromQueryVertex = queryEdge.getFromVertex();
+        toQueryVertex = queryEdge.getToVertex();
+        name = "JumpLikeJoin (" + fromQueryVertex + ")->(" + toQueryVertex + ")";
+        for (int i = 1; i < outSubgraph.getEdges().size(); i++) {
+            queryEdge = outSubgraph.getEdges().get(i);
+            fromQueryVertex = queryEdge.getFromVertex();
+            toQueryVertex = queryEdge.getToVertex();
+            outQVertexToIdxMap.put(toQueryVertex, i + 1);
+            name = name + "->(" + toQueryVertex + ")";
+        }
+
+        this.fwdAdjList = graph.getFwdAdjLists();
+
     }
 
     private void initEdgeTable() {
@@ -206,7 +231,34 @@ public class JumpingLikeJoin extends Operator implements Runnable {
     }
 
     @Override
+    public void execute() throws LimitExceededException {
+        for (int t1ID = 0; t1ID < fwdAdjList.length; t1ID++) {
+            probeTuple[0] = t1ID;
+            int t1StartIdx = fwdAdjList[t1ID].getLabelOrTypeOffsets()[label];
+            int t1EndIdx = fwdAdjList[t1ID].getLabelOrTypeOffsets()[label + 1];
+            for (int i = t1StartIdx; i < t1EndIdx; i++) {
+                int t1NeighborID = fwdAdjList[t1ID].getNeighbourId(i);
+                probeTuple[1] = t1NeighborID;
+                int edgeStartIdx = fwdAdjList[t1NeighborID].getLabelOrTypeOffsets()[label];
+                int edgeEndIdx = fwdAdjList[t1NeighborID].getLabelOrTypeOffsets()[label + 1];
+                for (int j = edgeStartIdx; j < edgeEndIdx; j++) {
+                    int edgeNeighborID = fwdAdjList[t1NeighborID].getNeighbourId(j);
+                    probeTuple[2] = edgeNeighborID;
+                    int t2StartIdx = fwdAdjList[edgeNeighborID].getLabelOrTypeOffsets()[label];
+                    int t2EndIdx = fwdAdjList[edgeNeighborID].getLabelOrTypeOffsets()[label + 1];
+                    for (int k = t2StartIdx; k < t2EndIdx; k++) {
+                        int t2NeighborID = fwdAdjList[edgeNeighborID].getNeighbourId(k);
+                        probeTuple[3] = t2NeighborID;
+                        next[0].processNewTuple();
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
     public void processNewTuple() throws LimitExceededException {
-        next[0].processNewTuple();
+        throw new UnsupportedOperationException(
+                this.getClass().getSimpleName() + " does not support execute().");
     }
 }
