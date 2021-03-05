@@ -377,7 +377,32 @@ public class QueryPlanner {
     }
 
     public Plan hardCode() {
-        var outSubgraph = new QueryGraph();
+        // 5边 = 3边Jump、2边ScanExtend + HashJoin
+        /*var outSubgraph = new QueryGraph();
+        var queryEdge = queryGraph.getEdge("p3", "p4");
+        outSubgraph.addEdge(queryEdge);
+        var scan = new Scan(outSubgraph);
+        var numEdges = getNumEdges(queryEdge);
+        var plan = new Plan(scan, numEdges);
+
+        plan = getPlanWithNextExtend(plan, "y").b;
+        List<Operator> preBuild = new ArrayList<>();
+        preBuild.add(plan.getLastOperator());
+
+        outSubgraph = new QueryGraph();
+        queryEdge = queryGraph.getEdge("x", "p1");
+        outSubgraph.addEdge(queryEdge);
+        queryEdge = queryGraph.getEdge("p1", "p2");
+        outSubgraph.addEdge(queryEdge);
+        queryEdge = queryGraph.getEdge("p2", "p3");
+        outSubgraph.addEdge(queryEdge);
+        var jumpingLikeJoin = new JumpingLikeJoin(outSubgraph, graph);
+        List<Operator> preProbe = new ArrayList<>();
+        preProbe.add(jumpingLikeJoin);*/
+
+
+        // 6边 = 3边Jump + HashJoin
+        /*var outSubgraph = new QueryGraph();
         var queryEdge = queryGraph.getEdge("x", "p1");
         outSubgraph.addEdge(queryEdge);
         queryEdge = queryGraph.getEdge("p1", "p2");
@@ -397,7 +422,20 @@ public class QueryPlanner {
         outSubgraph.addEdge(queryEdge);
         var jumpingLikeJoin2Build = new JumpingLikeJoin(outSubgraph, graph);
         List<Operator> preBuild = new ArrayList<>();
-        preBuild.add(jumpingLikeJoin2Build);
+        preBuild.add(jumpingLikeJoin2Build);*/
+
+        // 7边 = 3边Jump、4边jump + HashJoin
+        var outSubgraph = new QueryGraph();
+        var queryEdge = queryGraph.getEdge("x", "p1");
+        outSubgraph.addEdge(queryEdge);
+        queryEdge = queryGraph.getEdge("p1", "p2");
+        outSubgraph.addEdge(queryEdge);
+        queryEdge = queryGraph.getEdge("p2", "p3");
+        outSubgraph.addEdge(queryEdge);
+        var jumpingLikeJoin = new JumpingLikeJoin(outSubgraph, graph);
+        List<Operator> preBuild = new ArrayList<>();
+        preBuild.add(jumpingLikeJoin);
+
 
         return new Plan(HashJoin.make(queryGraph, preBuild, preProbe, 0));
     }
