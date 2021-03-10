@@ -15,13 +15,13 @@ import java.util.Map;
 
 
 public class JumpingLikeJoin extends Operator implements Runnable {
-    private SortedAdjList[] fwdAdjList;
-    private short label;
+    SortedAdjList[] fwdAdjList;
+    short label;
 
     @Getter
-    private List<int[]> edge3;
-    private Map<Integer, int[]> edgeTable;
-    private Map<Integer, List<Integer>> subTable; // record the vertex joined and the vertices followed the joined vertex
+    List<int[]> edge3;
+    Map<Integer, int[]> edgeTable;
+    Map<Integer, List<Integer>> subTable; // record the vertex joined and the vertices followed the joined vertex
 
     public JumpingLikeJoin(Graph graph, short label) {
         this.label = label;
@@ -58,7 +58,32 @@ public class JumpingLikeJoin extends Operator implements Runnable {
 
     }
 
-    private void initEdgeTable() {
+    public JumpingLikeJoin(QueryGraph outSubgraph, QueryGraph inSubgraph, Graph graph) {
+        super(outSubgraph, inSubgraph);
+        var queryEdge = outSubgraph.getEdges().get(0);
+        this.label = queryEdge.getLabel();
+        this.label = queryEdge.getLabel();
+        var fromQueryVertex = queryEdge.getFromVertex();
+        var toQueryVertex = queryEdge.getToVertex();
+        outQVertexToIdxMap = new HashMap<>();
+        outQVertexToIdxMap.put(fromQueryVertex, 0);
+        outQVertexToIdxMap.put(toQueryVertex, 1);
+        fromQueryVertex = queryEdge.getFromVertex();
+        toQueryVertex = queryEdge.getToVertex();
+        name = "JumpLikeJoin (" + fromQueryVertex + ")->(" + toQueryVertex + ")";
+        for (int i = 1; i < outSubgraph.getEdges().size(); i++) {
+            queryEdge = outSubgraph.getEdges().get(i);
+            fromQueryVertex = queryEdge.getFromVertex();
+            toQueryVertex = queryEdge.getToVertex();
+            outQVertexToIdxMap.put(toQueryVertex, i + 1);
+            name = name + "->(" + toQueryVertex + ")";
+        }
+
+        this.fwdAdjList = graph.getFwdAdjLists();
+
+    }
+
+    void initEdgeTable() {
         for (int i = 0; i < fwdAdjList.length; i++) {
             if (fwdAdjList[i].getNeighbourIds().length != 0) {
                 int startIdx = fwdAdjList[i].getLabelOrTypeOffsets()[label];
@@ -231,34 +256,22 @@ public class JumpingLikeJoin extends Operator implements Runnable {
     }
 
     @Override
-    public void execute() throws LimitExceededException {
-        for (int t1ID = 0; t1ID < fwdAdjList.length; t1ID++) {
-            probeTuple[0] = t1ID;
-            int t1StartIdx = fwdAdjList[t1ID].getLabelOrTypeOffsets()[label];
-            int t1EndIdx = fwdAdjList[t1ID].getLabelOrTypeOffsets()[label + 1];
-            for (int i = t1StartIdx; i < t1EndIdx; i++) {
-                int t1NeighborID = fwdAdjList[t1ID].getNeighbourId(i);
-                probeTuple[1] = t1NeighborID;
-                int edgeStartIdx = fwdAdjList[t1NeighborID].getLabelOrTypeOffsets()[label];
-                int edgeEndIdx = fwdAdjList[t1NeighborID].getLabelOrTypeOffsets()[label + 1];
-                for (int j = edgeStartIdx; j < edgeEndIdx; j++) {
-                    int edgeNeighborID = fwdAdjList[t1NeighborID].getNeighbourId(j);
-                    probeTuple[2] = edgeNeighborID;
-                    int t2StartIdx = fwdAdjList[edgeNeighborID].getLabelOrTypeOffsets()[label];
-                    int t2EndIdx = fwdAdjList[edgeNeighborID].getLabelOrTypeOffsets()[label + 1];
-                    for (int k = t2StartIdx; k < t2EndIdx; k++) {
-                        int t2NeighborID = fwdAdjList[edgeNeighborID].getNeighbourId(k);
-                        probeTuple[3] = t2NeighborID;
-                        next[0].processNewTuple();
-                    }
-                }
+    public void processNewTuple() throws LimitExceededException {
+        int jumpIdx = 2;
+        var vertexIdx = probeTuple[jumpIdx];
+        int r1StartIdx = fwdAdjList[vertexIdx].getLabelOrTypeOffsets()[label];
+        int r1EndIdx = fwdAdjList[vertexIdx].getLabelOrTypeOffsets()[label + 1];
+        for (int i = r1StartIdx; i < r1EndIdx; i++) {
+            int r1NeighborId = fwdAdjList[vertexIdx].getNeighbourId(i);
+            probeTuple[jumpIdx + 1] = r1NeighborId;
+            int edge1StartIdx = fwdAdjList[r1NeighborId].getLabelOrTypeOffsets()[label];
+            int edg1EndIdx = fwdAdjList[r1NeighborId].getLabelOrTypeOffsets()[label + 1];
+            for (int j = edge1StartIdx; j < edg1EndIdx; j++) {
+                int destinationID = fwdAdjList[r1NeighborId].getNeighbourId(j);
+                probeTuple[jumpIdx + 2] = destinationID;
+                numOutTuples++;
+                next[0].processNewTuple();
             }
         }
-    }
-
-    @Override
-    public void processNewTuple() throws LimitExceededException {
-        throw new UnsupportedOperationException(
-                this.getClass().getSimpleName() + " does not support execute().");
     }
 }

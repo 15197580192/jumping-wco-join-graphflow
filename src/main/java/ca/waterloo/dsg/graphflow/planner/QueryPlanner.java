@@ -8,6 +8,7 @@ import ca.waterloo.dsg.graphflow.plan.operator.extend.EI;
 import ca.waterloo.dsg.graphflow.plan.operator.extend.EI.CachingType;
 import ca.waterloo.dsg.graphflow.plan.operator.hashjoin.HashJoin;
 import ca.waterloo.dsg.graphflow.plan.operator.jumpinglikejoin.JumpingLikeJoin;
+import ca.waterloo.dsg.graphflow.plan.operator.jumpinglikejoin.JumpingLikeJoinExe;
 import ca.waterloo.dsg.graphflow.plan.operator.scan.Scan;
 import ca.waterloo.dsg.graphflow.plan.operator.sink.Sink.SinkType;
 import ca.waterloo.dsg.graphflow.planner.catalog.Catalog;
@@ -432,10 +433,32 @@ public class QueryPlanner {
         outSubgraph.addEdge(queryEdge);
         queryEdge = queryGraph.getEdge("p2", "p3");
         outSubgraph.addEdge(queryEdge);
-        var jumpingLikeJoin = new JumpingLikeJoin(outSubgraph, graph);
+        var jumpTo3 = new JumpingLikeJoinExe(outSubgraph, graph);
         List<Operator> preBuild = new ArrayList<>();
-        preBuild.add(jumpingLikeJoin);
+        preBuild.add(jumpTo3);
 
+        outSubgraph = new QueryGraph();
+        queryEdge = queryGraph.getEdge("p3", "p4");
+        outSubgraph.addEdge(queryEdge);
+        var scan = new Scan(outSubgraph);
+        var numEdges = getNumEdges(queryEdge);
+        var plan = new Plan(scan, numEdges);
+        plan = getPlanWithNextExtend(plan, "p5").b;
+
+        var inSubgraph = new QueryGraph();
+        inSubgraph.addEdge(queryGraph.getEdge("p3", "p4"));
+        inSubgraph.addEdge(queryGraph.getEdge("p4", "p5"));
+
+        outSubgraph = new QueryGraph();
+        outSubgraph.addEdge(queryGraph.getEdge("p3", "p4"));
+        outSubgraph.addEdge(queryGraph.getEdge("p4", "p5"));
+        outSubgraph.addEdge(queryGraph.getEdge("p5", "p6"));
+        outSubgraph.addEdge(queryGraph.getEdge("p6", "y"));
+
+        var jumpTo4 = new JumpingLikeJoin(outSubgraph, inSubgraph, graph);
+        plan.append(jumpTo4);
+        List<Operator> preProbe = new ArrayList<>();
+        preProbe.add(jumpTo4);
 
         return new Plan(HashJoin.make(queryGraph, preBuild, preProbe, 0));
     }
