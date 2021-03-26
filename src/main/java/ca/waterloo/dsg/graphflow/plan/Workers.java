@@ -4,6 +4,7 @@ import ca.waterloo.dsg.graphflow.plan.operator.Operator.LimitExceededException;
 import ca.waterloo.dsg.graphflow.plan.operator.hashjoin.Build;
 import ca.waterloo.dsg.graphflow.plan.operator.hashjoin.HashTable;
 import ca.waterloo.dsg.graphflow.plan.operator.jumpinglikejoin.JumpingLikeJoin;
+import ca.waterloo.dsg.graphflow.plan.operator.removeloop.RemLoop;
 import ca.waterloo.dsg.graphflow.plan.operator.scan.ScanBlocking;
 import ca.waterloo.dsg.graphflow.plan.operator.scan.ScanBlocking.VertexIdxLimits;
 import ca.waterloo.dsg.graphflow.storage.Graph;
@@ -87,6 +88,9 @@ public class Workers {
     }
 
     public void init(Graph graph, KeyStore store, short label) {
+        // 去环
+        /*RemLoop remLoop = new RemLoop(queryPlans[queryPlans.length - 1].getLastOperator().getOutSubgraph());
+        queryPlans[queryPlans.length - 1].append(remLoop);*/
         for (var queryPlan : queryPlans) {
             queryPlan.init(graph, store);
         }
@@ -102,6 +106,7 @@ public class Workers {
                 queryPlan.setProbeHashTables(ID, hashTables);
             }
         }
+
     }
 
     public void execute() throws InterruptedException {
@@ -111,17 +116,11 @@ public class Workers {
                 elapsedTime = queryPlans[0].getElapsedTime();
             } else {
                 var startTime = System.nanoTime();
-                queryPlans[0].execute();
-                var edge2 = queryPlans[0].getLastOperator().getIntermedia();
-                jumpingLikeJoin.buildSubTable(edge2);
-                var edge5 = jumpingLikeJoin.intersect(edge2, edge2);
-                logger.debug("edge5 has " + edge5.size());
+
                 var edge3ByTable = jumpingLikeJoin.getEdge3ByFwdAdjList();
-                var edge6 = jumpingLikeJoin.intersect(edge3ByTable, edge2);
                 var endTime = IOUtils.getElapsedTimeInMillis(startTime);
                 elapsedTime = endTime;
-                logger.debug("edge6 has " + edge6.size());
-                numOutTuples = edge6.size();
+                numOutTuples = edge3ByTable.size();
             }
         } else {
             var beginTime = System.nanoTime();

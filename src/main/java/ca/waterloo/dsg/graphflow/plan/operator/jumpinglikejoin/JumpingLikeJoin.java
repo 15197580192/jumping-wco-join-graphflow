@@ -16,7 +16,9 @@ import java.util.Map;
 
 public class JumpingLikeJoin extends Operator implements Runnable {
     SortedAdjList[] fwdAdjList;
+    SortedAdjList[] bwdAdjList;
     short label;
+    private int jumpIdx;
 
     @Getter
     List<int[]> edge3;
@@ -26,6 +28,7 @@ public class JumpingLikeJoin extends Operator implements Runnable {
     public JumpingLikeJoin(Graph graph, short label) {
         this.label = label;
         this.fwdAdjList = graph.getFwdAdjLists();
+        this.bwdAdjList = graph.getBwdAdjLists();
         this.edgeTable = new HashMap<>();
         this.subTable = new HashMap<>();
         this.edge3 = null;
@@ -55,13 +58,13 @@ public class JumpingLikeJoin extends Operator implements Runnable {
         }
 
         this.fwdAdjList = graph.getFwdAdjLists();
+        this.bwdAdjList = graph.getBwdAdjLists();
 
     }
 
-    public JumpingLikeJoin(QueryGraph outSubgraph, QueryGraph inSubgraph, Graph graph) {
+    public JumpingLikeJoin(QueryGraph outSubgraph, QueryGraph inSubgraph, Graph graph, int jumpIdx) {
         super(outSubgraph, inSubgraph);
         var queryEdge = outSubgraph.getEdges().get(0);
-        this.label = queryEdge.getLabel();
         this.label = queryEdge.getLabel();
         var fromQueryVertex = queryEdge.getFromVertex();
         var toQueryVertex = queryEdge.getToVertex();
@@ -78,9 +81,9 @@ public class JumpingLikeJoin extends Operator implements Runnable {
             outQVertexToIdxMap.put(toQueryVertex, i + 1);
             name = name + "->(" + toQueryVertex + ")";
         }
-
+        this.jumpIdx = jumpIdx;
         this.fwdAdjList = graph.getFwdAdjLists();
-
+        this.bwdAdjList = graph.getBwdAdjLists();
     }
 
     void initEdgeTable() {
@@ -257,7 +260,10 @@ public class JumpingLikeJoin extends Operator implements Runnable {
 
     @Override
     public void processNewTuple() throws LimitExceededException {
-        int jumpIdx = 2;
+        jumpByBwd();
+    }
+
+    private void jumpByFwd() throws LimitExceededException {
         var vertexIdx = probeTuple[jumpIdx];
         int r1StartIdx = fwdAdjList[vertexIdx].getLabelOrTypeOffsets()[label];
         int r1EndIdx = fwdAdjList[vertexIdx].getLabelOrTypeOffsets()[label + 1];
@@ -268,6 +274,24 @@ public class JumpingLikeJoin extends Operator implements Runnable {
             int edg1EndIdx = fwdAdjList[r1NeighborId].getLabelOrTypeOffsets()[label + 1];
             for (int j = edge1StartIdx; j < edg1EndIdx; j++) {
                 int destinationID = fwdAdjList[r1NeighborId].getNeighbourId(j);
+                probeTuple[jumpIdx + 2] = destinationID;
+                numOutTuples++;
+                next[0].processNewTuple();
+            }
+        }
+    }
+
+    private void jumpByBwd() throws LimitExceededException {
+        var vertexIdx = probeTuple[jumpIdx];
+        int r1StartIdx = bwdAdjList[vertexIdx].getLabelOrTypeOffsets()[label];
+        int r1EndIdx = bwdAdjList[vertexIdx].getLabelOrTypeOffsets()[label + 1];
+        for (int i = r1StartIdx; i < r1EndIdx; i++) {
+            int r1NeighborId = bwdAdjList[vertexIdx].getNeighbourId(i);
+            probeTuple[jumpIdx + 1] = r1NeighborId;
+            int edge1StartIdx = bwdAdjList[r1NeighborId].getLabelOrTypeOffsets()[label];
+            int edg1EndIdx = bwdAdjList[r1NeighborId].getLabelOrTypeOffsets()[label + 1];
+            for (int j = edge1StartIdx; j < edg1EndIdx; j++) {
+                int destinationID = bwdAdjList[r1NeighborId].getNeighbourId(j);
                 probeTuple[jumpIdx + 2] = destinationID;
                 numOutTuples++;
                 next[0].processNewTuple();

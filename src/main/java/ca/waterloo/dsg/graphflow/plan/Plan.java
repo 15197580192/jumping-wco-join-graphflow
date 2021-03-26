@@ -140,14 +140,8 @@ public class Plan implements Serializable {
         if (SinkType.LIMIT != sinkType) {
             var startTime = System.nanoTime();
             try {
-                logger.debug("subplans' size: " + subplans.size());
-                int sp = 0;
                 for (var subplan : subplans) {
-                    var subplanStartTime = System.nanoTime();
                     subplan.execute();
-                    var subplanEndTime = IOUtils.getElapsedTimeInMillis(subplanStartTime);
-                    logger.debug("Subplan " + sp + " used " + subplanEndTime + " ms.");
-                    sp++;
                 }
             } catch (LimitExceededException e) {
             } // never thrown.

@@ -56,7 +56,6 @@ public class OptimizerExecutor extends AbstractRunner {
         }
 
         var numQVertices = queryGraph.getNumVertices();
-        logger.debug("numQVertices is " + numQVertices);
         if (numQVertices >= 15 && numQVertices <= 25) {
             QueryPlannerBig.NUM_TOP_PLANS_KEPT = 5;
         } else if (numQVertices > 25) {
