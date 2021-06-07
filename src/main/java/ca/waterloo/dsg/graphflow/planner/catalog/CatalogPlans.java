@@ -44,8 +44,8 @@ public class CatalogPlans {
         public List<AdjListDescriptor> ALDs;
     }
 
-    public static int DEF_NUM_EDGES_TO_SAMPLE = 1000; // this may be the z.
-    public static int DEF_MAX_INPUT_NUM_VERTICES = 3; // this may be the h.
+    public static int DEF_NUM_EDGES_TO_SAMPLE = 1000; // this is z.
+    public static int DEF_MAX_INPUT_NUM_VERTICES = 2; // this is h.
     private int numSampledEdges;
     private int maxInputNumVertices;
 

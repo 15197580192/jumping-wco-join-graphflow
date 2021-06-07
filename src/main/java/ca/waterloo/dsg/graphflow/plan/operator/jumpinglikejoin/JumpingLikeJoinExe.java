@@ -14,7 +14,7 @@ public class JumpingLikeJoinExe extends JumpingLikeJoin {
 
     @Override
     public void execute() throws LimitExceededException {
-        jumpByBwd();
+        jumpByFwd();
     }
 
     private void jumpByFwd() throws LimitExceededException {

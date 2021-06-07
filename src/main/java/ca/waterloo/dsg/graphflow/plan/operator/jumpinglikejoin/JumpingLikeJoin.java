@@ -260,7 +260,7 @@ public class JumpingLikeJoin extends Operator implements Runnable {
 
     @Override
     public void processNewTuple() throws LimitExceededException {
-        jumpByBwd();
+        jumpByFwd();
     }
 
     private void jumpByFwd() throws LimitExceededException {

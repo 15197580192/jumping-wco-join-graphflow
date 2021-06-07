@@ -68,7 +68,7 @@ public class OptimizerExecutor extends AbstractRunner {
                 new QueryPlanner(queryGraph, catalog, graph) :
                 new QueryPlannerBig(queryGraph, catalog, graph);
         var beginTime = System.nanoTime();
-        var queryPlan = planner.hardCode(); // 此处改查询计划
+        var queryPlan = planner.getArticulationJoinPlan(); // 此处改查询计划
         var elapsedTime = IOUtils.getElapsedTimeInMillis(beginTime);
         if (!cmdLine.hasOption(ArgsFactory.OUTPUT_FILE)) {
             logger.info("Optimizer run time: " + elapsedTime + " (ms)");
@@ -76,7 +76,7 @@ public class OptimizerExecutor extends AbstractRunner {
         if (cmdLine.hasOption(ArgsFactory.EXECUTE_PLAN)) {
             beginTime = System.nanoTime();
             // initialize and execute the query transform, get the output metrics and log it.
-            var numThreads = !cmdLine.hasOption(ArgsFactory.NUM_THREADS) ? 1 /* single thread */ :
+            var numThreads = !cmdLine.hasOption(ArgsFactory.NUM_THREADS) ? 1 : // single thread
                     Integer.parseInt(cmdLine.getOptionValue(ArgsFactory.NUM_THREADS));
             var workers = new Workers(queryPlan, numThreads);
             logger.info("Plan initialization before exec run time: " + elapsedTime + " (ms)");
