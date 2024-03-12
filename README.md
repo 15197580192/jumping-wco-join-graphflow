@@ -1,7 +1,5 @@
-Graphflow Optimizers
+# jumping-wco-join-graphflow
 --------------------
-
-<img src="docs/img/graphflow.png" height="181px" weight="377">
 
 Table of Contents
 -----------------
@@ -12,8 +10,7 @@ Table of Contents
 
 Overview
 -----------------
-For an overview on Graphflow's one-time subgraph matching optimizer, check our [paper](http://amine.io/papers/wco-optimizer-vldb19.pdf).      
-Copyright © 2016-2020. DO NOT DISTRIBUTE. USE ONLY FOR ACADEMIC RESEARCH PURPOSES.   
+This is the code of the paper:Variable-length Path Query Evaluation based on Worst-Case Optimal Joins.Here we present how we embed our jumping-like worst-case optimal join technique in [graphflow-optimizer](https://github.com/queryproc/optimizing-subgraph-queries-combining-binary-and-worst-case-optimal-joins?tab=readme-ov-file).
 
 Build Steps
 -----------------
@@ -53,31 +50,14 @@ Once a dataset has been prepared, executing a query is as follows:
 ```
 python3 execute_query.py "(a)->(b),(b)->(c),(c)->(d)" /absolute/path/data
 ```
-
-An output example on the dataset of Amazon0601 from [SNAP](https://snap.stanford.edu/) with 1 edge label and 1 verte label is shown below. The dataset loading time, the opimizer run time, the quey execution run time and the query plan with the number of output and intermediate tuples are logged.
+## example
 ```
-Dataset loading run time: 626.713398 (ms)
-Optimizer run time: 9.745375 (ms)
-Plan initialization before exec run time: 9.745375 (ms)
-Query execution run time: 2334.2977 (ms)
-Number output tuples: 118175329
-Number intermediate tuples: 34971362
-Plan: SCAN (a)->(c), Single-Edge-Extend TO (b) From (a[Fwd]), Multi-Edge-Extend TO (d) From (b[Fwd]-c[Fwd])
+cd jumping-wco-join-graphflow
+python3 scripts/serialize_dataset.py test/web-Google.txt ./data
+python3 scripts/serialize_catalog.py ./data
+# Execute a query with length of 5 using our jumping-like-wco join technique
+python3 scripts/execute_query.py "(p1)-[3]->(p2),(p2)-[3]->(p3),(p3)-[3]->(p4),(p4)-[3]->(p5),(p5)-[3]->(p6)" ./data 
 ```
 
-In order to invoke a multi-threaded execution, one can execute the query above with the following command to use 2 threads.
-```
-python3 execute_query.py "(a)->(b),(b)->(c),(c)->(d)" /absolute/path/data -t 2
-```
 
-The query above assigns an arbitrary edge and vertex labels to (a), (b), (c), (a)->(b), and (b)->(c). Use it with unlabeled datasets only.
-When the dataset has labels, assign labels to each vertex and edge as follows:
-```
-python3 execute_query.py "(a:person)-[friendof]->(b:person), (b:person)-[likes]->(c:movie)" /absolute/path/data
-```
 
-Contact
------------------
-[Amine Mhedhbi](http://amine.io/), amine.mhedhbi@uwaterloo.ca
-
-# jumping-wco-join-graphflow
