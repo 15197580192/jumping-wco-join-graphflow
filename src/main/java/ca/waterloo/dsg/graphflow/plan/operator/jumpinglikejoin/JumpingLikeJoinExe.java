@@ -12,9 +12,14 @@ public class JumpingLikeJoinExe extends JumpingLikeJoin {
         super(outSubgraph, graph);
     }
 
+    public JumpingLikeJoinExe(QueryGraph outSubgraph, QueryGraph inSubgraph, Graph graph, int jumpIdx) {
+        super(outSubgraph, inSubgraph, graph, jumpIdx);
+    }
+
     @Override
     public void execute() throws LimitExceededException {
         jumpByFwd();
+        // jumpByBwd();
     }
 
     private void jumpByFwd() throws LimitExceededException {

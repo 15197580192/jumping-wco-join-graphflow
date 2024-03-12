@@ -57,7 +57,7 @@ public class Extend extends EI implements Serializable {
             nextOperator.init(probeTuple, graph, store);
         }
 
-//        this.intermedia = new ArrayList<>();
+    //    this.intermedia = new ArrayList<>();
     }
 
     /**
@@ -72,16 +72,16 @@ public class Extend extends EI implements Serializable {
             if (toType == KeyStore.ANY || toType == vertexTypes[outNeighbours.Ids[idx]]) {
                 numOutTuples++;
                 probeTuple[outIdx] = outNeighbours.Ids[idx];
-                // 此处将增加时间
-//                int[] tuple = new int[2];
-//                if(toQueryVertex.contentEquals("x")){
-//                    tuple[0] = probeTuple[outIdx];
-//                    tuple[1] = probeTuple[1];
-//                }else if (toQueryVertex.contentEquals("y")){
-//                    tuple[0] = probeTuple[0];
-//                    tuple[1] = probeTuple[outIdx];
-//                }
-//                intermedia.add(tuple);
+            //     // 此处将增加时间
+            //    int[] tuple = new int[2];
+            //    if(toQueryVertex.contentEquals("x")){
+            //        tuple[0] = probeTuple[outIdx];
+            //        tuple[1] = probeTuple[1];
+            //    }else if (toQueryVertex.contentEquals("y")){
+            //        tuple[0] = probeTuple[0];
+            //        tuple[1] = probeTuple[outIdx];
+            //    }
+            //    intermedia.add(tuple);
                 next[0].processNewTuple();
             }
         }

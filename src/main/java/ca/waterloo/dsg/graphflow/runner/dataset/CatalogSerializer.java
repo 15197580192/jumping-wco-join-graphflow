@@ -57,15 +57,18 @@ public class CatalogSerializer extends AbstractRunner {
             logger.error("Error in deserialization: " + e.getMessage());
             return;
         }
+        logger.info("test1");
 
         Catalog catalog = new Catalog(numSampledEdges, maxInputNumVertices);
         try {
             catalog.populate(graph, store, numThreads, inputDirectory + "/catalog.txt");
+            logger.info("test2");
         } catch (IOException e) {
             logger.error("Error logging catalog in human readable format: " + e.getMessage());
         }
         try {
             catalog.serialize(inputDirectory);
+            logger.info("test3");
         } catch (IOException e) {
             logger.error("Error in serializing the catalog: " + e.getMessage());
         }

@@ -6,7 +6,8 @@ import argparse
 import shutil
 import random
 
-bin_home = os.environ['GRAPHFLOW_HOME'] + '/build/install/graphflow/bin/'
+current_path = os.getcwd()
+bin_home = current_path + '/build/install/graphflow/bin/'
 
 def main():
     args = parse_args()

@@ -227,6 +227,7 @@ public class Catalog {
             maxInputNumVertices);
         setInputSubgraphs(plans.getQueryGraphsToExtend().getQueryGraphSet());
         var selectivityZero = plans.getSelectivityZero();
+        // System.out.println("check1");
         for (var select : selectivityZero) {
             var subgraphIdx = getSubgraphIdx(select.a);
             sampledSelectivity.putIfAbsent(subgraphIdx, new HashMap<>());
@@ -255,6 +256,7 @@ public class Catalog {
                 sampledSelectivity.get(subgraphIdx).put(ALDsAsStr + "~" + select.c, 0.00);
             }
         }
+        // System.out.println("check2");
         for (var queryPlanArr : plans.getQueryPlansArrs()) {
             init(graph, store, queryPlanArr);
             execute(queryPlanArr);

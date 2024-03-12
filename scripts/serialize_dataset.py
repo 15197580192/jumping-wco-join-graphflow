@@ -3,7 +3,8 @@ import os
 import subprocess
 import argparse
 
-bin_home = r'C:\Developments\eclipse-workspace\graphflow_optimizers' + '/build/install/graphflow/bin/'
+current_path = os.getcwd()
+bin_home = current_path + '/build/install/graphflow/bin/'
 
 def main():
     args = parse_args()

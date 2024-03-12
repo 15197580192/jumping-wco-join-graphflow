@@ -29,6 +29,8 @@ public class OptimizerExecutor extends AbstractRunner {
     protected static final Logger logger = LogManager.getLogger(OptimizerExecutor.class);
 
     public static void main(String[] args) throws InterruptedException, IOException {
+//	for (String a : args)
+//	   System.out.println(a);
         var startTimeLoading = System.nanoTime();
         var cmdLine = parseCmdLine(args, getCommandLineOptions());
         if (null == cmdLine) {
@@ -68,8 +70,14 @@ public class OptimizerExecutor extends AbstractRunner {
                 new QueryPlanner(queryGraph, catalog, graph) :
                 new QueryPlannerBig(queryGraph, catalog, graph);
         var beginTime = System.nanoTime();
-        var queryPlan = planner.getArticulationJoinPlan(); // 此处改查询计划
-        var elapsedTime = IOUtils.getElapsedTimeInMillis(beginTime);
+       
+    // here we comment the original plan generator and replace with our approach
+	// var queryPlan = planner.getArticulationJoinPlan(); 
+    // var queryPlan = planner.plan();  // baseline
+    var queryPlan = planner.planWithJump(); // our approach
+
+
+	var elapsedTime = IOUtils.getElapsedTimeInMillis(beginTime);
         if (!cmdLine.hasOption(ArgsFactory.OUTPUT_FILE)) {
             logger.info("Optimizer run time: " + elapsedTime + " (ms)");
         }

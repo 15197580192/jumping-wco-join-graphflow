@@ -127,11 +127,11 @@ public class QueryPlanner {
     private void considerAllNextQueryExtensions() {
         subgraphPlans.putIfAbsent(nextNumQVertices, new HashMap<>());
         var prevNumQVertices = nextNumQVertices - 1;
-        // 先考虑WCO
+        // prior considerate WCO
         for (var prevQueryPlans : subgraphPlans.get(prevNumQVertices).values()) {
             considerAllNextExtendOperators(prevQueryPlans);
         }
-        // 再考虑Binary Join
+        // then reconsider Binary Join
         if (!hasLimit && nextNumQVertices >= 4) {
             for (var queryPlans : subgraphPlans.get(nextNumQVertices).values()) {
                 var outSubgraph = queryPlans.get(0).getLastOperator().getOutSubgraph();
@@ -186,7 +186,7 @@ public class QueryPlanner {
                 icost = outTuplesToProcess * catalog.getICost(inSubgraph, ALDs, toType) +
                         // added to make caching effect on cost more robust.
                         (prevEstimatedNumOutTuples - outTuplesToProcess) * estimatedSelectivity;
-            } else { // cachingType == CachingType.PARTIAL_CACHING
+            } else { // cachingType == CachingType.PARTIAL_CACHINGuses
                 var ALDsToCache = ALDs.stream()
                         .filter(ALD -> ALD.getVertexIdx() <= lastPreviousRepeatedIndex)
                         .collect(Collectors.toList());
@@ -374,164 +374,147 @@ public class QueryPlanner {
         return Arrays.toString(queryVertices);
     }
 
-    public Plan hardCode() {
-        // 5边x->p1->p2->p3 p3->p4->y hash join
-        var outSubgraph = new QueryGraph();
-        var queryEdge = queryGraph.getEdge("x", "p1");
-        outSubgraph.addEdge(queryEdge);
-        var scan = new Scan(outSubgraph);
-        var numEdges = getNumEdges(queryEdge);
-        var buildPlan = new Plan(scan, numEdges);
-        buildPlan = getPlanWithNextExtend(buildPlan, "p2").b;
-        buildPlan = getPlanWithNextExtend(buildPlan, "p3").b;
-        List<Operator> preBuild = new ArrayList<>();
-        preBuild.add(buildPlan.getLastOperator());
 
-        outSubgraph = new QueryGraph();
-        queryEdge = queryGraph.getEdge("p3", "p4");
-        outSubgraph.addEdge(queryEdge);
-        scan = new Scan(outSubgraph);
-        numEdges = getNumEdges(queryEdge);
-        var probePlan = new Plan(scan, numEdges);
-        probePlan = getPlanWithNextExtend(probePlan, "y").b;
-        List<Operator> preProbe = new ArrayList<>();
-        preProbe.add(probePlan.getLastOperator());
-
-        // 5边 = 3边Jump、2边ScanExtend + HashJoin
-//        var outSubgraph = new QueryGraph();
-//        var queryEdge = queryGraph.getEdge("p3", "p4");
-//        outSubgraph.addEdge(queryEdge);
-//        var scan = new Scan(outSubgraph);
-//        var numEdges = getNumEdges(queryEdge);
-//        var plan = new Plan(scan, numEdges);
-//        plan = getPlanWithNextExtend(plan, "y").b;
-//        List<Operator> preProbe = new ArrayList<>();
-//        preProbe.add(plan.getLastOperator());
-//
-//        var outSubgraph = new QueryGraph();
-//        var queryEdge = queryGraph.getEdge("x", "p1");
-//        outSubgraph.addEdge(queryEdge);
-//        queryEdge = queryGraph.getEdge("p1", "p2");
-//        outSubgraph.addEdge(queryEdge);
-//        queryEdge = queryGraph.getEdge("p2", "p3");
-//        outSubgraph.addEdge(queryEdge);
-//        var jumpingTo3 = new JumpingLikeJoinExe(outSubgraph, graph);
-//        var plan = new Plan(jumpingTo3);
-//        // 1 -> 3 -> 5 Jump
-//        var inSubgraph = outSubgraph;
-//        outSubgraph = new QueryGraph();
-//        outSubgraph.addEdge(queryGraph.getEdge("x", "p1"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p1", "p2"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p2", "p3"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p3", "p4"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p4", "p5"));
-//        var jumpingTo5 = new JumpingLikeJoin(outSubgraph, inSubgraph, graph, 3);
-//        plan.append(jumpingTo5);
-////         5 -> 7
-//        inSubgraph = outSubgraph;
-//        outSubgraph = new QueryGraph();
-//        outSubgraph.addEdge(queryGraph.getEdge("x", "p1"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p1", "p2"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p2", "p3"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p3", "p4"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p4", "p5"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p5", "p6"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p6", "y"));
-//        var jumpingTo7 = new JumpingLikeJoin(outSubgraph, inSubgraph, graph, 5);
-//
-//        plan.append(jumpingTo5);
-//        plan.append(jumpingTo7);
-//        return plan;
-
-//        List<Operator> preBuild = new ArrayList<>();
-//        preBuild.add(jumpingLikeJoin);
-
-        // 6边 = 3边Jump + HashJoin
-//        var outSubgraph = new QueryGraph();
-//        var queryEdge = queryGraph.getEdge("x", "p1");
-//        outSubgraph.addEdge(queryEdge);
-//        queryEdge = queryGraph.getEdge("p1", "p2");
-//        outSubgraph.addEdge(queryEdge);
-//        queryEdge = queryGraph.getEdge("p2", "p3");
-//        outSubgraph.addEdge(queryEdge);
-//        var jumpingLikeJoin2Build = new JumpingLikeJoinExe(outSubgraph, graph);
-//        List<Operator> preBuild = new ArrayList<>();
-//        preBuild.add(jumpingLikeJoin2Build);
-//
-//        outSubgraph = new QueryGraph();
-//        queryEdge = queryGraph.getEdge("p3", "p4");
-//        outSubgraph.addEdge(queryEdge);
-//        queryEdge = queryGraph.getEdge("p4", "p5");
-//        outSubgraph.addEdge(queryEdge);
-//        queryEdge = queryGraph.getEdge("p5", "y");
-//        outSubgraph.addEdge(queryEdge);
-//        var jumpingLikeJoin2Probe = new JumpingLikeJoinExe(outSubgraph, graph);
-//        List<Operator> preProbe = new ArrayList<>();
-//        preProbe.add(jumpingLikeJoin2Probe);
-
-        // 7边 = 3边Jump、4边jump + HashJoin
-//        var outSubgraph = new QueryGraph();
-//        var queryEdge = queryGraph.getEdge("x", "p1");
-//        outSubgraph.addEdge(queryEdge);
-//        queryEdge = queryGraph.getEdge("p1", "p2");
-//        outSubgraph.addEdge(queryEdge);
-//        queryEdge = queryGraph.getEdge("p2", "p3");
-//        outSubgraph.addEdge(queryEdge);
-//        var jumpTo3 = new JumpingLikeJoinExe(outSubgraph, graph);
-//        List<Operator> preBuild = new ArrayList<>();
-//        preBuild.add(jumpTo3);
-//
-//        outSubgraph = new QueryGraph();
-//        queryEdge = queryGraph.getEdge("p3", "p4");
-//        outSubgraph.addEdge(queryEdge);
-//        var scan = new Scan(outSubgraph);
-//        var numEdges = getNumEdges(queryEdge);
-//        var plan = new Plan(scan, numEdges);
-//        plan = getPlanWithNextExtend(plan, "p5").b;
-//
-//        var inSubgraph = new QueryGraph();
-//        inSubgraph.addEdge(queryGraph.getEdge("p3", "p4"));
-//        inSubgraph.addEdge(queryGraph.getEdge("p4", "p5"));
-//
-//        outSubgraph = new QueryGraph();
-//        outSubgraph.addEdge(queryGraph.getEdge("p3", "p4"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p4", "p5"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p5", "p6"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p6", "y"));
-//        var jumpTo4 = new JumpingLikeJoin(outSubgraph, inSubgraph, graph, 2);
-//        plan.append(jumpTo4);
-
-//        inSubgraph = outSubgraph;
-//        outSubgraph = new QueryGraph();
-//        outSubgraph.addEdge(queryGraph.getEdge("x", "p1"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p1", "p2"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p2", "p3"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p3", "p4"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p4", "p5"));
-//        outSubgraph.addEdge(queryGraph.getEdge("p5", "y"));
-//        var jumpTo6 = new JumpingLikeJoin(outSubgraph, inSubgraph, graph, 4);
-//        plan.append(jumpTo6);
-//        List<Operator> preProbe = new ArrayList<>();
-//        preProbe.add(jumpTo4);
-        return new Plan(HashJoin.make(queryGraph, preBuild, preProbe, 0));
+    public Plan planWithJump() {
+        switch (numVertices) {
+            case 4:
+                return Jump3();
+            case 5:
+                return Jump4();
+            case 6:
+                return Jump5();
+            case 7:
+                return Jump6();
+            case 8:
+                return Jump7();
+            default:
+                return plan();
+        }
     }
 
-    public Plan WCO() {
+
+	public Plan Jump3() {
+        System.out.println("jump");
+        
         var outSubgraph = new QueryGraph();
-        var queryEdge = queryGraph.getEdge("x", "p1");
-        outSubgraph.addEdge(queryEdge);
-        var scan = new Scan(outSubgraph);
-        var numEdges = getNumEdges(queryEdge);
-        var plan = new Plan(scan, numEdges);
-        plan = getPlanWithNextExtend(plan, "p2").b;
-        plan = getPlanWithNextExtend(plan, "p3").b;
-        plan = getPlanWithNextExtend(plan, "p4").b;
-        plan = getPlanWithNextExtend(plan, "p5").b;
-        plan = getPlanWithNextExtend(plan, "p6").b;
-        plan = getPlanWithNextExtend(plan, "y").b;
+        outSubgraph.addEdge(queryGraph.getEdge("p1", "p2"));
+        outSubgraph.addEdge(queryGraph.getEdge("p2", "p3"));
+        outSubgraph.addEdge(queryGraph.getEdge("p3", "p4"));
+        var jumpingTo3 = new JumpingLikeJoinExe(outSubgraph, graph);
+        var plan = new Plan(jumpingTo3);
+        return plan;
+	}
+
+    
+	public Plan Jump4() {
+        System.out.println("jump4");
+
+       var outSubgraph = new QueryGraph();
+       var queryEdge = queryGraph.getEdge("p1", "p2");
+       outSubgraph.addEdge(queryEdge);
+       var scan = new Scan(outSubgraph);
+       var numEdges = getNumEdges(queryEdge);
+       var plan = new Plan(scan, numEdges);
+       plan = getPlanWithNextExtend(plan, "p3").b;
+
+       var inSubgraph = new QueryGraph();
+       inSubgraph.addEdge(queryGraph.getEdge("p1", "p2"));
+       inSubgraph.addEdge(queryGraph.getEdge("p2", "p3"));
+
+       outSubgraph = new QueryGraph();
+       outSubgraph.addEdge(queryGraph.getEdge("p1", "p2"));
+       outSubgraph.addEdge(queryGraph.getEdge("p2", "p3"));
+       outSubgraph.addEdge(queryGraph.getEdge("p3", "p4"));
+       outSubgraph.addEdge(queryGraph.getEdge("p4", "p5"));
+       var jumpTo4 = new JumpingLikeJoin(outSubgraph, inSubgraph, graph, 2);
+       plan.append(jumpTo4);
 
         return plan;
-    }
+	}
+	public Plan Jump5() {
+        System.out.println("jump5");
+        var outSubgraph = new QueryGraph();
+        outSubgraph.addEdge(queryGraph.getEdge("p1", "p2"));
+        outSubgraph.addEdge(queryGraph.getEdge("p2", "p3"));
+        var jumpingTo2 = new JumpingLikeJoinExe(outSubgraph, graph);
+        var plan = new Plan(jumpingTo2);
+        var inSubgraph = outSubgraph;
+        outSubgraph = new QueryGraph();
+        outSubgraph.addEdge(queryGraph.getEdge("p1", "p2"));
+        outSubgraph.addEdge(queryGraph.getEdge("p2", "p3"));
+        outSubgraph.addEdge(queryGraph.getEdge("p3", "p4"));
+        outSubgraph.addEdge(queryGraph.getEdge("p4", "p5"));
+        outSubgraph.addEdge(queryGraph.getEdge("p5", "p6"));
+        var jumpingTo5 = new JumpingLikeJoin(outSubgraph, inSubgraph, graph, 3);
+        plan.append(jumpingTo5);
+        
+        return plan;
+	}
+	public Plan Jump6() {
+        System.out.println("jump6");
+       var outSubgraph = new QueryGraph();
+       var queryEdge = queryGraph.getEdge("p1", "p2");
+       outSubgraph.addEdge(queryEdge);
+       queryEdge = queryGraph.getEdge("p2", "p3");
+       outSubgraph.addEdge(queryEdge);
+       queryEdge = queryGraph.getEdge("p3", "p4");
+       outSubgraph.addEdge(queryEdge);
+       var jumpingLikeJoin2Build = new JumpingLikeJoinExe(outSubgraph, graph);
+       List<Operator> preBuild = new ArrayList<>();
+       preBuild.add(jumpingLikeJoin2Build);
+
+       outSubgraph = new QueryGraph();
+       queryEdge = queryGraph.getEdge("p4", "p5");
+       outSubgraph.addEdge(queryEdge);
+       queryEdge = queryGraph.getEdge("p5", "p6");
+       outSubgraph.addEdge(queryEdge);
+       queryEdge = queryGraph.getEdge("p6", "p7");
+       outSubgraph.addEdge(queryEdge);
+       var jumpingLikeJoin2Probe = new JumpingLikeJoinExe(outSubgraph, graph);
+       List<Operator> preProbe = new ArrayList<>();
+       preProbe.add(jumpingLikeJoin2Probe);
+       return new Plan(HashJoin.make(queryGraph, preBuild, preProbe, 0));
+	}
+
+	public Plan Jump7() {
+        System.out.println("jump7");
+
+    // 7边 = 3边Jump、4边jump + HashJoin
+       var outSubgraph = new QueryGraph();
+       var queryEdge = queryGraph.getEdge("p1", "p2");
+       outSubgraph.addEdge(queryEdge);
+       queryEdge = queryGraph.getEdge("p2", "p3");
+       outSubgraph.addEdge(queryEdge);
+       queryEdge = queryGraph.getEdge("p3", "p4");
+       outSubgraph.addEdge(queryEdge);
+       var jumpTo3 = new JumpingLikeJoinExe(outSubgraph, graph);
+       List<Operator> preBuild = new ArrayList<>();
+       preBuild.add(jumpTo3);
+
+       outSubgraph = new QueryGraph();
+       queryEdge = queryGraph.getEdge("p4", "p5");
+       outSubgraph.addEdge(queryEdge);
+       var scan = new Scan(outSubgraph);
+       var numEdges = getNumEdges(queryEdge);
+       var plan = new Plan(scan, numEdges);
+       plan = getPlanWithNextExtend(plan, "p6").b;
+
+       var inSubgraph = new QueryGraph();
+       inSubgraph.addEdge(queryGraph.getEdge("p4", "p5"));
+       inSubgraph.addEdge(queryGraph.getEdge("p5", "p6"));
+
+       outSubgraph = new QueryGraph();
+       outSubgraph.addEdge(queryGraph.getEdge("p4", "p5"));
+       outSubgraph.addEdge(queryGraph.getEdge("p5", "p6"));
+       outSubgraph.addEdge(queryGraph.getEdge("p6", "p7"));
+       outSubgraph.addEdge(queryGraph.getEdge("p7", "p8"));
+       var jumpTo4 = new JumpingLikeJoin(outSubgraph, inSubgraph, graph, 2);
+       plan.append(jumpTo4);
+       List<Operator> preProbe = new ArrayList<>();
+       preProbe.add(jumpTo4);
+       return new Plan(HashJoin.make(queryGraph, preBuild, preProbe, 0));
+        
+	}
 
     public Plan getArticulationJoinPlan() {
         FindArticulation findArticulation = new FindArticulation();

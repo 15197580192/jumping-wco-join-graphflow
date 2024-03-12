@@ -32,7 +32,7 @@ public abstract class Operator implements Serializable {
     @Getter protected Operator[] next;
     @Getter @Setter protected Operator prev;
 
-    @Setter protected int[] probeTuple;
+    @Getter @Setter protected int[] probeTuple;
 
     @Getter protected int outTupleLen;
     @Getter protected QueryGraph inSubgraph;

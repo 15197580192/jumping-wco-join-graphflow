@@ -233,6 +233,33 @@ public class JumpingLikeJoin extends Operator implements Runnable {
         return res;
     }
 
+    public List<int[]> getEdge2ByFwdAdjList() {
+        List<int[]> res = new ArrayList<>();
+        // t1ID -表t1-> t1NeighborID -表edge-> edgeNeighborID -表t2-> t2NeighborID
+        for (int t1ID = 0; t1ID < fwdAdjList.length; t1ID++) {
+            int t1StartIdx = fwdAdjList[t1ID].getLabelOrTypeOffsets()[label];
+            int t1EndIdx = fwdAdjList[t1ID].getLabelOrTypeOffsets()[label + 1];
+            for (int i = t1StartIdx; i < t1EndIdx; i++) {
+                int t1NeighborID = fwdAdjList[t1ID].getNeighbourId(i);
+                int edgeStartIdx = fwdAdjList[t1NeighborID].getLabelOrTypeOffsets()[label];
+                int edgeEndIdx = fwdAdjList[t1NeighborID].getLabelOrTypeOffsets()[label + 1];
+//                for (int j = edgeStartIdx; j < edgeEndIdx; j++) {
+//                    int edgeNeighborID = fwdAdjList[t1NeighborID].getNeighbourId(j);
+//                    int t2StartIdx = fwdAdjList[edgeNeighborID].getLabelOrTypeOffsets()[label];
+//                    int t2EndIdx = fwdAdjList[edgeNeighborID].getLabelOrTypeOffsets()[label + 1];
+                    for (int k = edgeStartIdx; k < edgeEndIdx; k++) {
+                        int t2NeighborID = fwdAdjList[t1NeighborID].getNeighbourId(k);
+                        int[] tmpRes = new int[2];
+                        tmpRes[0] = t1ID;
+                        tmpRes[1] = t2NeighborID;
+                        res.add(tmpRes);
+                    }
+//                }
+            }
+        }
+        return res;
+    }
+
     @Override
     public void run() {
         edge3 = getEdge3ByFwdAdjList();
@@ -261,6 +288,7 @@ public class JumpingLikeJoin extends Operator implements Runnable {
     @Override
     public void processNewTuple() throws LimitExceededException {
         jumpByFwd();
+        // jumpByBwd();
     }
 
     private void jumpByFwd() throws LimitExceededException {
